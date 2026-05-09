@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Roof Estimator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #0f1f3d;
+    --blue: #2563eb;
+    --blue-light: #3b82f6;
+    --gold: #f59e0b;
+    --bg: #f0f4f8;
+    --white: #ffffff;
+    --gray: #6b7280;
+    --gray-light: #e5e9ef;
+    --green: #10b981;
+    --red: #ef4444;
+    --text: #1e293b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--navy);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: var(--white);
+    letter-spacing: 0.02em;
+  }
+  .logo span { color: var(--gold); }
+  .header-link {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .header-link:hover { color: var(--gold); }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, var(--navy) 0%, #1a3a6b 100%);
+    padding: 3.5rem 2rem 4rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -20%;
+    width: 140%;
+    height: 200%;
+    background: radial-gradient(ellipse at 60% 40%, rgba(37,99,235,0.25) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-eyebrow {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+  }
+  .hero h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1.05;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.01em;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--gold);
+  }
+  .hero p {
+    color: rgba(255,255,255,0.65);
+    font-size: 1.05rem;
+    max-width: 480px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+  }
+
+  /* ── SEARCH CARD ── */
+  .search-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 620px;
+    margin: 0 auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    position: relative;
+    z-index: 1;
+  }
+  .input-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  .address-input {
+    flex: 1;
+    font-family: 'Barlow', sans-serif;
+    font-size: 1rem;
+    padding: 0.85rem 1.1rem;
+    border: 2px solid var(--gray-light);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s;
+    color: var(--text);
+  }
+  .address-input:focus { border-color: var(--blue); }
+  .address-input::placeholder { color: #aab0bb; }
+
+  .quote-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.85rem 1.8rem;
+    background: var(--blue);
+    color: var(--white);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .quote-btn:hover { background: var(--blue-light); }
+  .quote-btn:active { transform: scale(0.98); }
+  .quote-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+
+  /* ── MAIN CONTENT ── */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* ── STATUS ── */
+  #status {
+    display: none;
+    background: var(--white);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--blue);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  #status.error { border-color: var(--red); }
+  .status-inner { display: flex; align-items: center; gap: 0.75rem; }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 3px solid var(--gray-light);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status-text { font-size: 0.95rem; font-weight: 500; }
+
+  /* ── RESULTS ── */
+  #results { display: none; }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  .card-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--gray-light);
+  }
+
+  /* Roof stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  .stat { }
+  .stat-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--gray);
+    margin-top: 0.15rem;
+  }
+  .confidence-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .confidence-high { background: #d1fae5; color: #065f46; }
+  .confidence-medium { background: #fef3c7; color: #92400e; }
+  .confidence-low { background: #fee2e2; color: #991b1b; }
+
+  /* Line items */
+  .line-items-card { grid-column: 1 / -1; }
+  .line-items-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .line-items-table thead tr {
+    background: var(--navy);
+    color: var(--white);
+  }
+  .line-items-table th {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .line-items-table th.right, .line-items-table td.right { text-align: right; }
+  .line-items-table tbody tr:nth-child(even) { background: #f8fafc; }
+  .line-items-table tbody tr:hover { background: #eff6ff; }
+  .line-items-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--gray-light); }
+  .totals-section {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.3rem;
+  }
+  .totals-row {
+    display: flex;
+    gap: 2rem;
+    font-size: 0.9rem;
+    color: var(--gray);
+  }
+  .totals-row.total-final {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--navy);
+    border-top: 2px solid var(--navy);
+    padding-top: 0.4rem;
+    margin-top: 0.2rem;
+  }
+
+  /* ── DOWNLOAD BUTTON ── */
+  .download-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+  }
+  .download-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 1rem 2.5rem;
+    background: var(--green);
+    color: var(--white);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.1s;
+    box-shadow: 0 4px 20px rgba(16,185,129,0.35);
+  }
+  .download-btn:hover { background: #059669; transform: translateY(-2px); }
+  .download-btn:active { transform: translateY(0); }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 0.78rem;
+    color: var(--gray);
+    border-top: 1px solid var(--gray-light);
+  }
+  footer a { color: var(--blue); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .results-grid { grid-template-columns: 1fr; }
+    .input-row { flex-direction: column; }
+    .quote-btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">AI Roof<span>Estimator</span></div>
+  <a href="https://hire.ahcomputing.com" target="_blank" class="header-link">hire.ahcomputing.com</a>
+</header>
+
+<div class="hero">
+  <div class="hero-eyebrow">Powered by Claude Vision AI</div>
+  <h1>Roof Quote in<br/><em>Seconds, Not Hours</em></h1>
+  <p>Enter any US address. We pull the satellite image, measure the roof, and generate a full PDF estimate automatically.</p>
+
+  <div class="search-card">
+    <div class="input-row">
+      <input
+        type="text"
+        class="address-input"
+        id="addressInput"
+        placeholder="1234 Main St, Salt Lake City, UT 84101"
+        autocomplete="street-address"
+      />
+      <button class="quote-btn" id="quoteBtn" onclick="runQuote()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+        </svg>
+        Get Quote
+      </button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- Status / Loading -->
+  <div id="status">
+    <div class="status-inner">
+      <div class="spinner" id="statusSpinner"></div>
+      <span class="status-text" id="statusText">Analyzing roof...</span>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="results-grid">
+
+      <!-- Roof Analysis Card -->
+      <div class="card">
+        <div class="card-title">Roof Analysis</div>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-val" id="statArea">—</div>
+            <div class="stat-label">Total Roof Area (sqft)</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statSquares">—</div>
+            <div class="stat-label">Squares</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statEave">—</div>
+            <div class="stat-label">Eave Linear Ft</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statRidge">—</div>
+            <div class="stat-label">Ridge + Hip Ft</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statRoofType">—</div>
+            <div class="stat-label">Roof Type</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statPitch">—</div>
+            <div class="stat-label">Pitch</div>
+          </div>
+        </div>
+        <div style="margin-top:1rem;">
+          <span class="confidence-badge" id="confidenceBadge">—</span>
+          <span style="font-size:0.75rem; color:var(--gray); margin-left:0.5rem;" id="analysisNotes"></span>
+        </div>
+      </div>
+
+      <!-- Cost Summary Card -->
+      <div class="card">
+        <div class="card-title">Cost Summary</div>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-val" id="statSubtotal">—</div>
+            <div class="stat-label">Materials + Labor</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statTax">—</div>
+            <div class="stat-label">Sales Tax</div>
+          </div>
+        </div>
+        <div style="margin-top:1.5rem; padding-top:1rem; border-top:2px solid var(--navy);">
+          <div style="font-family:'Barlow Condensed',sans-serif; font-size:0.75rem; letter-spacing:0.1em; color:var(--gray); text-transform:uppercase;">Total Estimate</div>
+          <div style="font-family:'Barlow Condensed',sans-serif; font-size:2.5rem; font-weight:800; color:var(--navy); line-height:1.1;" id="statTotal">—</div>
+        </div>
+      </div>
+
+      <!-- Line Items Card -->
+      <div class="card line-items-card">
+        <div class="card-title">Line Items</div>
+        <table class="line-items-table">
+          <thead>
+            <tr>
+              <th>QTY</th>
+              <th>Unit</th>
+              <th>Description</th>
+              <th class="right">Unit Price</th>
+              <th class="right">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="lineItemsBody"></tbody>
+        </table>
+        <div class="totals-section" id="totalsSection"></div>
+      </div>
+    </div>
+
+    <!-- Download Button -->
+    <div class="download-row">
+      <a href="/download" class="download-btn" target="_blank">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+        </svg>
+        Download PDF Quote
+      </a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Built for JobNimbus AI Builder Day · May 8–9, 2026 ·
+  <a href="https://hire.ahcomputing.com" target="_blank">hire.ahcomputing.com</a>
+</footer>
+
+<script>
+const addressInput = document.getElementById('addressInput');
+const quoteBtn = document.getElementById('quoteBtn');
+const statusEl = document.getElementById('status');
+const statusText = document.getElementById('statusText');
+const statusSpinner = document.getElementById('statusSpinner');
+const resultsEl = document.getElementById('results');
+
+addressInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') runQuote();
+});
+
+function fmt(n) {
+  return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function setStatus(msg, isError = false) {
+  statusEl.style.display = 'block';
+  statusEl.className = isError ? 'error' : '';
+  statusText.textContent = msg;
+  statusSpinner.style.display = isError ? 'none' : 'block';
+  statusEl.style.borderLeftColor = isError ? 'var(--red)' : 'var(--blue)';
+}
+
+async function runQuote() {
+  const address = addressInput.value.trim();
+  if (!address) {
+    addressInput.focus();
+    return;
+  }
+
+  quoteBtn.disabled = true;
+  resultsEl.style.display = 'none';
+  setStatus('Geocoding address…');
+
+  const steps = [
+    [800,  'Fetching satellite imagery…'],
+    [2500, 'Querying Solar API for roof data…'],
+    [5000, 'Analyzing roof geometry…'],
+    [8000, 'Calculating materials and labor…'],
+  ];
+  const timers = steps.map(([delay, msg]) => setTimeout(() => setStatus(msg), delay));
+  function cancelTimers() { timers.forEach(id => clearTimeout(id)); }
+
+  try {
+    const resp = await fetch('/quote', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({address}),
+    });
+    const data = await resp.json();
+
+    cancelTimers();
+
+    if (!resp.ok || !data.success) {
+      setStatus(data.error || 'Something went wrong.', true);
+      quoteBtn.disabled = false;
+      return;
+    }
+
+    const source = (data.analysis && data.analysis.data_source) || 'AI Vision';
+    setStatus('✓ Quote complete — powered by ' + source);
+    setTimeout(() => { statusEl.style.display = 'none'; }, 1500);
+
+    renderResults(data);
+    resultsEl.style.display = 'block';
+
+  } catch (err) {
+    cancelTimers();
+    setStatus('Network error: ' + err.message, true);
+  }
+
+  quoteBtn.disabled = false;
+}
+
+function renderResults(data) {
+  const { analysis, estimate } = data;
+  const s = estimate.summary;
+
+  // Roof stats
+  document.getElementById('statArea').textContent = s.total_roof_area_sqft.toLocaleString();
+  document.getElementById('statSquares').textContent = s.total_squares;
+  document.getElementById('statEave').textContent = s.eave_linear_ft;
+  document.getElementById('statRidge').textContent = s.ridge_linear_ft;
+  document.getElementById('statRoofType').textContent = (analysis.roof_type || '—').replace(/\b\w/g, c => c.toUpperCase());
+  document.getElementById('statPitch').textContent = analysis.pitch_description || '—';
+
+  // Confidence badge
+  const conf = (analysis.confidence || 'medium').toLowerCase();
+  const badge = document.getElementById('confidenceBadge');
+  badge.textContent = conf.charAt(0).toUpperCase() + conf.slice(1) + ' confidence';
+  badge.className = 'confidence-badge confidence-' + conf;
+
+  document.getElementById('analysisNotes').textContent = analysis.notes || '';
+
+  // Cost summary
+  document.getElementById('statSubtotal').textContent = fmt(estimate.subtotal);
+  document.getElementById('statTax').textContent = fmt(estimate.tax);
+  document.getElementById('statTotal').textContent = fmt(estimate.total);
+
+  // Line items
+  const tbody = document.getElementById('lineItemsBody');
+  tbody.innerHTML = '';
+  estimate.line_items.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.qty}</td>
+      <td>${item.unit}</td>
+      <td>${item.description}</td>
+      <td class="right">${fmt(item.unit_price)}</td>
+      <td class="right">${fmt(item.amount)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Totals
+  const totalsSection = document.getElementById('totalsSection');
+  totalsSection.innerHTML = `
+    <div class="totals-row"><span>Subtotal</span><span>${fmt(estimate.subtotal)}</span></div>
+    <div class="totals-row"><span>Sales Tax (${estimate.tax_rate_pct}%)</span><span>${fmt(estimate.tax)}</span></div>
+    <div class="totals-row total-final"><span>TOTAL</span><span>${fmt(estimate.total)}</span></div>
+  `;
+}
+</script>
+</body>
+</html>
